@@ -67,8 +67,8 @@ The system is composed of **4 microservices** and **1 frontend client**, a Postg
 **Key Logic:**
 
 - **Async Processing:** Never blocks. Offloads all heavy lifting to Redis queues.
-- **The "Sanity Check":** Handles generating presigned upload and download urls for s3 bucket. It also receives job requests from the client and pushes them to the correct queue.
-- **WebSocket Delivery:** Subscribes to Redis Pub/Sub; pushes completed job results to the correct client. The websocket runs on an http route
+- **The "Sanity Check":** Handles generating presigned upload and download URLs for the S3 bucket. Receives job requests from the client: outfit-cleaning jobs are pushed to `queue:tailor_jobs`, try-on jobs to `queue:weaver_jobs`.
+- **WebSocket Delivery:** Subscribes to Redis channel `events:job_done`; uses `user_id` in each message to route the result to the correct client's WebSocket. The WebSocket runs on an HTTP route (e.g. `/updates`).
 #### Routes
 ```
 User Service Routes
@@ -102,8 +102,8 @@ Jobs
 | **Output** | Transparent PNG of the outfit only |
 
 **Why it wins:** Solves the "dirty data" problem automatically—users can upload product photos, not pre-cleaned assets.
-- It listens over the `tailorJob` queue for any incoming jobs
-- It takes the s3 key of the image to be cleaned, gets the presigned download url, downloads the image and processes it, uploads the result to s3 and publishes over the finishedJobs channel the finished result (job type, the s3 key for the resulting image, whether the job failed or not, which user it corresponds to, the VTON id it corresponds to). The websocket will update the corresponding VTON entry with the s3 key for the transparent png of the outfit only.
+- It listens on the `queue:tailor_jobs` queue for incoming jobs.
+- It takes the S3 key of the image to be cleaned, gets a presigned download URL, downloads the image, processes it, uploads the result to S3, and publishes to the `events:job_done` channel with a payload including `job_type: "outfit_clean"`, the result S3 key, status, `user_id`, and `vton_id`. The Gateway subscribes to `events:job_done` and pushes the result to the correct client over WebSocket, updating the corresponding VTON entry with the S3 key for the transparent PNG of the outfit.
 
 ---
 
@@ -122,7 +122,7 @@ Jobs
 2. Waits up to 500ms to collect up to `batch_size` jobs.
 3. Stacks images into a single tensor and runs one inference pass.
 4. Generates the results, uploads them to s3 and extracts s3 key for each one.
-5. Publishes results (job type, the s3 key for the resulting image, whether the job failed or not, which user it corresponds to, the VTON id it corresponds to) to Redis. Webscoket will the update the corresponding VTON entry with the s3 key for the transformted png of the outfit
+5. Publishes to the `events:job_done` channel (job type `"try_on"`, result S3 key, status, `user_id`, `vton_id`). The Gateway subscribes and pushes to the client over WebSocket, updating the corresponding VTON entry with the S3 key for the generated try-on image.
 
 **Result:** Up to ~8× throughput increase during spikes (batch=8 vs batch=1).
 
@@ -145,7 +145,7 @@ Jobs
 | **C. Surge** | `queue_depth > 50` | `BATCH_SIZE = 8` | Max throughput |
 | **D. Emergency** | `average_wait_time > 10s` | `config:degraded_mode = 1` | Lower resolution (512px) |
 
-**Metrics:** Reads `queue_depth` via `LLEN queue:jobs`. Optional: `average_wait_time` computed from job timestamps stored in Redis by the Gateway on enqueue and by the Weaver on completion.
+**Metrics:** Reads `queue_depth` via `LLEN queue:weaver_jobs`. For Scenario D (emergency degraded mode), the Arbitrator needs `average_wait_time`: the Gateway stores `created_at` when enqueuing (in the job payload); the Weaver (or a post-process step) can record completion time. The Arbitrator computes average wait from these (e.g. from a Redis structure keyed by job id or from completed job metadata).
 
 ---
 
@@ -179,12 +179,12 @@ spec:
     - type: redis
       metadata:
         addressFromEnv: REDIS_HOST
-        listName: queue:jobs
+        listName: queue:weaver_jobs
         listLength: "10"
 ```
 
 - **Target:** ~1 GPU pod per 10 pending jobs.
-- **`listName`:** Must match the Redis key used by Gateway/Weaver (`queue:jobs`).
+- **`listName`:** Must match the Redis key used by Gateway/Weaver (`queue:weaver_jobs`).
 - **`addressFromEnv`:** Use a Secret or ConfigMap for Redis connection; avoid hardcoding.
 
 > **Note:** KEDA Redis scaler metadata may vary by version. See [KEDA Redis Scaler](https://keda.sh/docs/2.12/scalers/redis/) for your cluster's KEDA version.
@@ -195,6 +195,10 @@ spec:
 |------|-----------|---------------|-----------|
 | **Internal** | Arbitrator | Milliseconds | Increases `BATCH_SIZE` to absorb spikes |
 | **External** | KEDA | Seconds | Deploys new GPU pods if batching is insufficient |
+
+### 4.4 Optional: Tailor Autoscaling
+
+If outfit-upload traffic grows, `queue:tailor_jobs` can be scaled with a second KEDA ScaledObject (same pattern as the Weaver, using `listName: queue:tailor_jobs`). By default, Tailor can run as a single replica if throughput is sufficient.
 
 ---
 
@@ -233,16 +237,17 @@ We cannot run diffusion at 60fps in the browser. Instead we use a **proxy visual
 ## 6. Data Flow (User Journey)
 
 ```
-1. UPLOAD     User uploads outfit.jpg (e.g., product photo)
-2. CLEAN      Gateway → Tailor. SegFormer extracts cloth → cloth_clean.png
-3. PREVIEW    User sees cloth_clean.png warped onto body in real-time (Three.js)
-4. ACTION     User poses, clicks "Snap"
-5. QUEUE      Gateway pushes { user_photo_url, cloth_clean_url } to Redis queue:jobs
-6. ORCHESTRATE
+1. UPLOAD     User uploads outfit.jpg → Gateway stores in S3, pushes to queue:tailor_jobs → returns job_id (queued)
+2. CLEAN      Tailor pops job, runs SegFormer, uploads cloth_clean.png to S3, publishes to events:job_done
+3. DELIVER    Gateway (subscribed to events:job_done) pushes result to client over WebSocket → VTON entry gets cloth_clean_url
+4. PREVIEW    User sees cloth_clean.png warped onto body in real-time (Three.js). "Snap" is only enabled after CLEAN completes.
+5. ACTION     User poses, clicks "Snap"
+6. QUEUE      Gateway validates outfit is ready, then pushes { user_photo_url, cloth_clean_url, user_id, vton_id } to queue:weaver_jobs
+7. ORCHESTRATE
    • Arbitrator sees queue_depth = 12 → sets BATCH_SIZE = 4
    • KEDA sees queue_depth > 10 → scales Weaver to 2 pods
-7. GENERATE   Weaver pops 4 jobs, runs CatVTON, saves to Linode Object Storage
-8. DELIVER    Weaver publishes "job_done" to Redis → Gateway → WebSocket → User
+8. GENERATE   Weaver pops jobs, runs CatVTON, saves to Linode Object Storage, publishes to events:job_done
+9. DELIVER    Gateway pushes try-on result to client over WebSocket (routing by user_id)
 ```
 
 ---
@@ -251,32 +256,53 @@ We cannot run diffusion at 60fps in the browser. Instead we use a **proxy visual
 
 | Key | Type | Producer | Consumer | Purpose |
 |-----|------|----------|----------|---------|
-| `queue:jobs` | List | Gateway (LPUSH) | Weaver (BRPOP) | Job queue |
+| `queue:tailor_jobs` | List | Gateway (LPUSH) | Tailor (BRPOP) | Outfit-cleaning job queue |
+| `queue:weaver_jobs` | List | Gateway (LPUSH) | Weaver (BRPOP) | Try-on job queue |
 | `config:batch_size` | String | Arbitrator (SET) | Weaver (GET) | Dynamic batch policy |
 | `config:degraded_mode` | String | Arbitrator | Weaver | 0=normal, 1=512px |
-| `config:mode` | String | Arbitrator | Admin | VIP / ECONOMY / SURGE |
-| `events:job_done` | Pub/Sub | Weaver (PUBLISH) | Gateway (SUBSCRIBE) | Real-time completion |
+| `config:mode` | String | Arbitrator | Admin / future | VIP / ECONOMY / SURGE (e.g. billing or priority) |
+| `events:job_done` | Pub/Sub | Tailor, Weaver (PUBLISH) | Gateway (SUBSCRIBE) | Real-time completion; Gateway routes by `user_id` |
 
-**Job Payload (in `queue:jobs`):**
+**Job Payload (in `queue:tailor_jobs`):**
+
+```json
+{
+  "id": "job_<uuid>",
+  "s3_key": "uploads/outfit_abc123.jpg",
+  "user_id": "user_<uuid>",
+  "vton_id": "vton_<uuid>",
+  "created_at": 1706956800
+}
+```
+
+**Job Payload (in `queue:weaver_jobs`):**
 
 ```json
 {
   "id": "job_<uuid>",
   "user_photo_url": "https://...",
   "cloth_clean_url": "https://...",
+  "user_id": "user_<uuid>",
+  "vton_id": "vton_<uuid>",
   "created_at": 1706956800
 }
 ```
 
-**`events:job_done` payload:**
+**`events:job_done` payload (required for WebSocket routing with multiple Gateway replicas):**
 
 ```json
 {
   "job_id": "job_<uuid>",
+  "job_type": "outfit_clean",
   "result_url": "https://...",
-  "status": "completed"
+  "result_s3_key": "cleaned/outfit_xyz.png",
+  "status": "completed",
+  "user_id": "user_<uuid>",
+  "vton_id": "vton_<uuid>"
 }
 ```
+
+- `job_type` is either `"outfit_clean"` (Tailor) or `"try_on"` (Weaver). The Gateway uses `user_id` (and optionally `connection_id` if stored) to push the event to the correct WebSocket. When using Redis Pub/Sub with multiple Gateway replicas, every pod receives every message; only the pod that holds the WebSocket for that `user_id` forwards the event.
 
 ---
 
@@ -286,16 +312,16 @@ We cannot run diffusion at 60fps in the browser. Instead we use a **proxy visual
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/upload/cloth` | Upload cloth image → returns `cloth_clean_url` |
-| POST | `/api/snap` | Submit try-on job → returns `job_id` |
-| GET | `/api/status/:job_id` | Job status |
-| WS | `/updates` | Real-time job completion |
+| POST | `/api/upload/cloth` | Enqueue outfit-cleaning job → returns `job_id`, `status: "queued"`. Client receives `cloth_clean_url` asynchronously via WebSocket (or GET /api/status/:job_id). |
+| POST | `/api/snap` | Submit try-on job → returns `job_id`. **Requires** a completed outfit for the given `cloth_clean_url` (i.e. the corresponding outfit-cleaning job must have finished). Gateway returns 4xx if the outfit is not ready. |
+| GET | `/api/status/:job_id` | Job status (supports both outfit-cleaning and try-on jobs). |
+| WS | `/updates` | Real-time job completion; payloads include `job_type`, `result_url`, `user_id`, `vton_id`. |
 
 ### Tailor
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/segment` | Input: image. Output: transparent PNG (cloth only) |
+| POST | `/segment` | Input: image. Output: transparent PNG (cloth only). Used internally; client flow is via Gateway (upload → queue:tailor_jobs → Tailor → events:job_done → WebSocket). |
 
 ### POST /api/snap — Request
 
@@ -327,7 +353,7 @@ We cannot run diffusion at 60fps in the browser. Instead we use a **proxy visual
 | **Redis** | Managed Redis or self-hosted on LKE | Queues and pub/sub |
 | **Load Balancer** | NodeBalancer | Distributes traffic; enable sticky sessions for WebSockets |
 
-**WebSocket Note:** Use session affinity (sticky sessions) so a client's WebSocket stays on the same Gateway pod that enqueued its job, or ensure Gateway uses Redis Pub/Sub so any replica can deliver results.
+**WebSocket delivery:** Every completion is published to `events:job_done` with `user_id` (and `vton_id`). All Gateway replicas subscribe. Each replica maintains a mapping of `user_id` (or connection/session id) to WebSocket; when a message arrives, only the replica that holds that client's WebSocket forwards the event (others ignore). Alternatively, use session affinity (sticky sessions) so the same pod that enqueued the job also holds the WebSocket—still require `user_id` in the payload so that pod can match the message to the correct connection.
 
 ---
 
@@ -385,7 +411,7 @@ Proteus/
 | Gateway | `REDIS_URL` | Redis connection string |
 | Gateway | `TAILOR_URL` | Tailor service URL |
 | Gateway | `OBJECT_STORAGE_*` | Linode Object Storage credentials |
-| Tailor | `REDIS_URL` | Optional, if Tailor uses Redis |
+| Tailor | `REDIS_URL` | Redis connection (consumes `queue:tailor_jobs`, publishes to `events:job_done`) |
 | Weaver | `REDIS_URL` | Redis connection |
 | Weaver | `OBJECT_STORAGE_*` | Upload results |
 | Arbitrator | `REDIS_URL` | Redis connection |
@@ -429,7 +455,7 @@ services:
 - **Namespace:** `proteus`
 - **Redis:** StatefulSet or external managed Redis
 - **Gateway:** Deployment + Service + Ingress; replicas ≥ 2
-- **Tailor:** Deployment + Service (CPU)
+- **Tailor:** Deployment + Service (CPU); optional KEDA ScaledObject on `queue:tailor_jobs` if scaling is needed
 - **Weaver:** Deployment with GPU node selector; KEDA ScaledObject
 - **Arbitrator:** Deployment (1 replica)
 
