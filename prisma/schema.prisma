@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  password  String
+  user_name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  vtons     VTON[]
+
+}
+
+model VTON {
+  id                 String   @id @default(uuid())
+  uncleaned_outfit   String?
+  cleaned_outfit     String?
+  user_snap          String?
+  outfit_try_on      String?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  // Foreign Key
+  user_id            String
+
+  // Relations
+  user               User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
