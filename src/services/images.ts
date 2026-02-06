@@ -1,6 +1,6 @@
 import s3Utils from "../utils/s3";
 
-const getPresignedUploadUrl = async (userId: string, fileType: string, fileName: string): Promise<string> => {
+const getPresignedUploadUrl = async (userId: string, fileType: string, fileName: string): Promise<{url: string, key: string}> => {
     try {
         const key = s3Utils.generateKey(userId, fileType, fileName);
         const url = await s3Utils.getPresignedUploadUrl(key);
@@ -24,4 +24,4 @@ const imageService = {
     getPresignedUploadUrl,
     getPresignedDownloadUrl,
 }
-export defaultimageService;
+export default imageService;
