@@ -2,10 +2,12 @@ import "./utils/env";
 import { PORT } from "./utils/env"; 
 import express from "express";
 import routers from "./routers/routers";
-
+import cookieParser from "cookie-parser";
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.get("/", (_req, res) => {
   res.json({ message: "Welcome to Proteus Backend!" });
