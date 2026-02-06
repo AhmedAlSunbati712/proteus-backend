@@ -14,7 +14,7 @@ app.get("/", (_req, res) => {
 })
 
 app.use("/images", routers.imagesRouter);
-
+app.use("/user", routers.userRouter);
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
