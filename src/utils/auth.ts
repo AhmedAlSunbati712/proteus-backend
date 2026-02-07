@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "secret";
-const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) ?? 10;
+const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 
 export const hashPassword = async (password: string): Promise<string> => {
     return await bcrypt.hash(password, SALT_ROUNDS);

@@ -3,7 +3,6 @@ import { Request, Response } from "express";
 import { generateToken, hashPassword } from "../utils/auth";
 import { User } from "@prisma/client";
 import { comparePassword } from "../utils/auth";
-import jwt from "jsonwebtoken";
 
 const createUser = async (req: Request, res: Response): Promise<void> => {
     try {

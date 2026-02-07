@@ -1,6 +1,5 @@
 import { prisma } from "../db";
 import { Prisma, User } from ".prisma/client";
-import { hashPassword, comparePassword, generateToken } from "../utils/auth";
 
 const getUser = async (userId: string, query: Partial<User>): Promise<User | null> => {
     try {
@@ -30,7 +29,7 @@ const createUser = async (data: Prisma.UserCreateInput): Promise<User> => {
     }
 }
 
-const getUsers = async (query: Partial<User>): Promise<Pick<User, "user_name">[]> => {
+const getUsers = async (query: Partial<User>): Promise<User[]> => {
     try {
         return await prisma.user.findMany({
             where: {
