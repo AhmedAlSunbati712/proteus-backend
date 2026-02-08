@@ -1,9 +1,15 @@
 import "./utils/env";
-import { PORT } from "./utils/env"; 
+import { PORT } from "./utils/env";
 import express from "express";
 import routers from "./routers/routers";
 import cookieParser from "cookie-parser";
+import { createServer } from "http";
+import { initWebSocket } from "./websocket/server";
+
 const app = express();
+export const server = createServer(app);
+
+initWebSocket(server);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -19,6 +25,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
