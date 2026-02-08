@@ -21,7 +21,7 @@ export const queueWeaverJobs = async (job: any) => {
     try {
         const jobId = uuidv4();
         const jobData = {
-            jobId,
+            id: jobId,
             ...job,
             created_at: new Date().toISOString(),
         };
