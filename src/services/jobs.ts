@@ -42,9 +42,9 @@ const queueWeaverJobs = async (job: {
     }
 }
 
-const queueService = {
+const jobService = {
     queueTailorJobs,
     queueWeaverJobs,
 }
 
-export default queueService;
+export default jobService;
