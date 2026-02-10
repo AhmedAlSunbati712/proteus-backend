@@ -1,7 +1,11 @@
 import { redis } from "../config/redis";
 import { v4 as uuidv4 } from "uuid";
 
-export const queueTailorJobs = async (job: any) => {
+const queueTailorJobs = async (job: {
+    user_id: string;
+    vton_id: string;
+    uncleaned_outfit_s3: string;
+}) => {
     try {
         const jobId = uuidv4();
         const jobData = {
@@ -17,7 +21,12 @@ export const queueTailorJobs = async (job: any) => {
     }
 }
 
-export const queueWeaverJobs = async (job: any) => {
+const queueWeaverJobs = async (job: {
+    user_id: string;
+    vton_id: string;
+    user_snap_s3: string;
+    uncleaned_outfit_s3: string;
+}) => {
     try {
         const jobId = uuidv4();
         const jobData = {
@@ -32,3 +41,10 @@ export const queueWeaverJobs = async (job: any) => {
         throw error;
     }
 }
+
+const jobService = {
+    queueTailorJobs,
+    queueWeaverJobs,
+}
+
+export default jobService;

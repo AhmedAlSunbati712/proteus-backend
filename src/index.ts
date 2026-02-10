@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { initWebSocket } from "./websocket/server";
 
+
 const app = express();
 export const server = createServer(app);
 
@@ -15,8 +16,12 @@ app.use(cookieParser());
 app.get("/", (_req, res) => {
   res.json({ message: "Welcome to Proteus Backend!" });
 });
+
 app.use("/images", routers.imagesRouter);
 app.use("/user", routers.userRouter);
+app.use("/vton", routers.vtonRouter);
+app.use("/jobs", routers.jobsRouter);
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
