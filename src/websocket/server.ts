@@ -31,7 +31,12 @@ export async function initWebSocket(server: HttpServer): Promise<void> {
   const usersToSockets = new Map<string, WebSocket>();
 
   // Listening on the events:job_done channel
-  await subscriber.subscribe("events:job_done");
+  try {
+    await subscriber.subscribe("events:job_done");
+  } catch (error) {
+    console.error("Failed to subscribe to events:job_done channel:", error);
+    process.exit(1);
+  }
 
   // TODO: Handle redis channel messages here.
 
