@@ -1,3 +1,21 @@
 node_modules
 dist
 .env
+
+# Python cache/build artifacts
+__pycache__/
+*.pyc
+
+# Local virtual environments
+.venv/
+.venv-weaver/
+venv/
+
+# Weaver local config
+weaver_service/.env
+
+# Downloaded model artifacts (large binaries)
+weaver_service/models/
+
+# macOS
+.DS_Store
