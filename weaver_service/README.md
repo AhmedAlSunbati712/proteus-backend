@@ -49,3 +49,17 @@ Example (download full repo files):
 ```bash
 CATVTON_DOWNLOAD_FULL_REPO=true python weaver_service/download_model.py
 ```
+
+## Mask-Free Runtime Note
+
+`weaver_service/catvton.py` now targets mask-free inference via `CatVTONPix2PixPipeline`.
+To run non-stub mode, vendor the CatVTON source runtime into:
+
+- `weaver_service/vendor/catvton/model/pipeline.py`
+- `weaver_service/vendor/catvton/utils.py`
+
+Then set:
+
+```bash
+INFERENCE_BACKEND=catvton
+```

@@ -19,6 +19,16 @@ class Settings:
 
     inference_backend: str
     catvton_model_id: str
+    catvton_model_dir: str
+    catvton_model_variant: str
+    catvton_base_model_path: str
+    mixed_precision: str
+    allow_tf32: bool
+    num_inference_steps: int
+    guidance_scale: float
+    width: int
+    height: int
+    seed: int
     device: str
 
     log_level: str
@@ -29,6 +39,13 @@ def _env(name: str, default: str | None = None) -> str:
     if value is None:
         raise ValueError(f"Missing required env var: {name}")
     return value
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def load_settings() -> Settings:
@@ -43,7 +60,17 @@ def load_settings() -> Settings:
         s3_access_key_id=os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("MINIO_ROOT_USER"),
         s3_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv("MINIO_ROOT_PASSWORD"),
         inference_backend=_env("INFERENCE_BACKEND", "stub").lower(),
-        catvton_model_id=_env("CATVTON_MODEL_ID", "zhengchong/CatVTON"),
+        catvton_model_id=_env("CATVTON_MODEL_ID", "zhengchong/CatVTON-MaskFree"),
+        catvton_model_dir=_env("CATVTON_MODEL_DIR", "weaver_service/models/CatVTON-MaskFree"),
+        catvton_model_variant=_env("CATVTON_MODEL_VARIANT", "mix-48k-1024"),
+        catvton_base_model_path=_env("CATVTON_BASE_MODEL_PATH", "timbrooks/instruct-pix2pix"),
+        mixed_precision=_env("MIXED_PRECISION", "bf16"),
+        allow_tf32=_env_bool("ALLOW_TF32", True),
+        num_inference_steps=int(_env("NUM_INFERENCE_STEPS", "50")),
+        guidance_scale=float(_env("GUIDANCE_SCALE", "2.5")),
+        width=int(_env("WIDTH", "768")),
+        height=int(_env("HEIGHT", "1024")),
+        seed=int(_env("SEED", "-1")),
         device=_env("DEVICE", "cuda"),
         log_level=_env("LOG_LEVEL", "INFO"),
     )
