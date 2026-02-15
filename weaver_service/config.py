@@ -10,6 +10,12 @@ class Settings:
     redis_queue: str
     redis_events_channel: str
 
+    ENV: str
+    
+    minio_endpoint: str
+    minio_root_user: str
+    minio_root_password: str
+    
     aws_region: str
     s3_bucket: str
     s3_result_prefix: str
@@ -49,16 +55,21 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def load_settings() -> Settings:
+    isDev = _env("ENV", "development") == "development"
     return Settings(
         redis_url=_env("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue=_env("REDIS_WEAVER_QUEUE", "queue:weaver_jobs"),
         redis_events_channel=_env("REDIS_EVENTS_CHANNEL", "events:job_done"),
+        ENV=_env("ENV", "development"),
+        minio_endpoint=_env("MINIO_ENDPOINT", "http://localhost:9000"),
+        minio_root_user=_env("MINIO_ROOT_USER", "minioadmin"),
+        minio_root_password=_env("MINIO_ROOT_PASSWORD", "minioadmin"),
         aws_region=_env("AWS_REGION", "us-east-1"),
         s3_bucket=_env("S3_BUCKET", "proteus-bucket"),
         s3_result_prefix=_env("S3_RESULT_PREFIX", "outputs/weaver"),
-        s3_endpoint_url=os.getenv("S3_ENDPOINT_URL") or os.getenv("MINIO_ENDPOINT"),
-        s3_access_key_id=os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("MINIO_ROOT_USER"),
-        s3_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv("MINIO_ROOT_PASSWORD"),
+        s3_endpoint_url=os.getenv("S3_ENDPOINT_URL"),
+        s3_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        s3_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
         inference_backend=_env("INFERENCE_BACKEND", "stub").lower(),
         catvton_model_id=_env("CATVTON_MODEL_ID", "zhengchong/CatVTON-MaskFree"),
         catvton_model_dir=_env("CATVTON_MODEL_DIR", "weaver_service/models/CatVTON-MaskFree"),
