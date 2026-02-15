@@ -75,6 +75,9 @@ def numpy_to_pil(images: np.ndarray | Iterable[np.ndarray]) -> list[Image.Image]
         images = images[None, ...]
     pil_images = []
     for image in images:
+        if np.issubdtype(image.dtype, np.floating):
+            image = np.clip(image, 0.0, 1.0)
+            image = (image * 255.0).round()
         if image.ndim == 3 and image.shape[-1] == 1:
             pil_images.append(Image.fromarray(image.squeeze().astype("uint8"), mode="L"))
         else:

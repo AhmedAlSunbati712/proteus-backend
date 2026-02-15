@@ -52,6 +52,7 @@ class CatVTONModel:
             weight_dtype=self._weight_dtype,
             use_tf32=self.settings.allow_tf32,
             device=self.settings.device,
+            skip_safety_check=True,
         )
 
     def infer(self, person_img: Image.Image, outfit_img: Image.Image) -> Image.Image:
