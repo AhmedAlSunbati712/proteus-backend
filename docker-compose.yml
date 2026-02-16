@@ -37,8 +37,41 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  weaver:
+    build:
+      context: ./weaver_service
+      dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      ENV: development
+      REDIS_URL: redis://redis:6379/0
+      REDIS_WEAVER_QUEUE: queue:weaver_jobs
+      REDIS_EVENTS_CHANNEL: events:job_done
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      AWS_REGION: us-east-1
+      S3_BUCKET: proteus-bucket
+      S3_RESULT_PREFIX: outputs/weaver
+      INFERENCE_BACKEND: stub
+      LOG_LEVEL: INFO
+      DEVICE: cpu
+    volumes:
+      - weaver_models:/app/models
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  weaver_models:
