@@ -43,6 +43,21 @@ services:
       timeout: 5s
       retries: 5
 
+  arbitrator:
+    build:
+      context: .
+      dockerfile: arbitrator/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      ENV: development
+      REDIS_URL: redis://redis:6379/0
+      REDIS_WEAVER_QUEUE: queue:weaver_jobs
+      REDIS_EVENTS_CHANNEL: events:job_done
+      LOG_LEVEL: INFO
+    restart: unless-stopped
+
   weaver:
     build:
       context: .

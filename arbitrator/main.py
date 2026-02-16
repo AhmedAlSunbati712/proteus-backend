@@ -1,7 +1,5 @@
 from common.config import load_settings
-from common.job_schema import WeaverJobDoneEvent
 from common.redis_client import RedisClient
-from common.s3_client import S3ImageStore
 from common.log_utils import get_logger, setup_logging
 import time
 
@@ -14,14 +12,11 @@ def main() -> None:
     if not redis_client.ping():
         raise RuntimeError("Redis ping failed")
 
-    logger.info("Arbitrator worker started: queue=%s channel=%s", settings.redis_queue, settings.redis_events_channel)
+    logger.info("Arbitrator worker started")
     batch_size = redis_client.get_config_batch_size()
-    if batch_size is None:
-        batch_size = 1
-        redis_client.set_config_batch_size(batch_size)
-    else:
-        batch_size = int(batch_size)
-    cooldown_time = 500 # 500ms
+    redis_client.set_config_batch_size(batch_size)
+    logger.info("Batch size set to %s", batch_size)
+    cooldown_time = 1 # 1 second
     last_adjustment = time.time()
     while True:
         queue_depth = redis_client.get_queue_depth(settings.redis_queue)
@@ -42,5 +37,6 @@ def main() -> None:
             redis_client.set_config_batch_size(batch_size)
         time.sleep(0.1)
 
-    
-    
+
+if __name__ == "__main__":
+    main()

@@ -47,10 +47,12 @@ class RedisClient:
         return int(self._redis.publish(channel_name, json.dumps(event, default=str)))
 
     def get_config_batch_size(self) -> int:
-        return int(self._redis.get("config:batch_size"))
+        return int(self._redis.get("config:batch_size")) if self._redis.get("config:batch_size") is not None else 1
 
     def set_config_batch_size(self, batch_size: int) -> None:
+        if batch_size < 1:
+            return
         self._redis.set("config:batch_size", str(batch_size))
 
     def get_queue_depth(self, queue_name: str) -> int:
-        return int(self._redis.llen(queue_name))
+        return int(self._redis.llen(queue_name)) if self._redis.llen(queue_name) is not None else 0
