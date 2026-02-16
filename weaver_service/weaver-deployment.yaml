@@ -1,0 +1,24 @@
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  name: weaver
+  labels:
+    app: weaver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weaver
+    
+  template:
+    metadata:
+      labels:
+        app: weaver
+    spec:
+      containers:
+      - name: weaver
+        image: weaver
+        imagePullPolicy: Never
+        envFrom:
+          - secretRef:
+              name: proteus-secrets

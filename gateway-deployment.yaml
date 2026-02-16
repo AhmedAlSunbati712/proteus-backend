@@ -1,0 +1,32 @@
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  name: proteus-gateway
+  labels:
+    app: proteus-gateway
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proteus-gateway
+    
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 40%
+      maxUnavailable: 40%
+  template:
+    metadata:
+      labels:
+        app: proteus-gateway
+    spec:
+      containers:
+      - name: proteus-gateway
+        image: proteus-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 3000
+        envFrom:
+         - secretRef:
+            name: proteus-secrets
