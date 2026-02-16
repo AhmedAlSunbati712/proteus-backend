@@ -3,12 +3,12 @@ from __future__ import annotations
 from pydantic import ValidationError
 
 from .catvton import CatVTONModel
-from .config import load_settings
-from .job_schema import WeaverJobDoneEvent
-from .log_utils import get_logger, setup_logging
+from common.config import load_settings
+from common.job_schema import WeaverJobDoneEvent
+from common.log_utils import get_logger, setup_logging
 from .pipeline import run_job
-from .redis_client import RedisClient
-from .s3_client import S3ImageStore
+from common.redis_client import RedisClient
+from common.s3_client import S3ImageStore
 
 
 def main() -> None:
@@ -32,7 +32,7 @@ def main() -> None:
     )
 
     while True:
-        raw_job = redis_client.consume_job(settings.redis_queue, timeout_seconds=5)
+        raw_job = redis_client.consume_job_weaver(settings.redis_queue, timeout_seconds=5)
         if raw_job is None:
             continue
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 
 from .catvton import CatVTONModel
-from .config import Settings
-from .job_schema import WeaverJob, WeaverJobDoneEvent
-from .log_utils import JobContextAdapter, bind_job
-from .s3_client import S3ImageStore
+from common.config import Settings
+from common.job_schema import WeaverJob, WeaverJobDoneEvent
+from common.log_utils import JobContextAdapter, bind_job
+from common.s3_client import S3ImageStore
 
 
 def _result_key(settings: Settings, job: WeaverJob) -> str:

@@ -45,8 +45,8 @@ services:
 
   weaver:
     build:
-      context: ./weaver_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: weaver_service/Dockerfile
     depends_on:
       redis:
         condition: service_healthy

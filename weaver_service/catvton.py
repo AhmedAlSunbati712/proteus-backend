@@ -7,7 +7,7 @@ from typing import Any
 from PIL import Image
 from huggingface_hub import snapshot_download
 
-from .config import Settings
+from common.config import Settings
 
 
 @dataclass
