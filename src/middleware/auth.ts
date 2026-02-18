@@ -14,6 +14,7 @@ const authenticationMiddleware = async (req: Request, res: Response, next: NextF
         }
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
         (req as any).userId = decoded.userId;
+        (req as any).token = token;
         next();
     } catch (error) {
         console.error(error);
