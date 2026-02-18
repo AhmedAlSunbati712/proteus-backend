@@ -16,6 +16,7 @@ class CatVTONModel:
 
     def __post_init__(self) -> None:
         self._pipeline: Any | None = None
+        self._prepare_image = None
         self._resize_and_crop = None
         self._resize_and_padding = None
         self._torch: Any | None = None
@@ -29,7 +30,7 @@ class CatVTONModel:
         try:
             import torch  # type: ignore
             from weaver_service.vendor.catvton.model.pipeline import CatVTONPix2PixPipeline  # type: ignore
-            from weaver_service.vendor.catvton.utils import init_weight_dtype, resize_and_crop, resize_and_padding  # type: ignore
+            from weaver_service.vendor.catvton.utils import init_weight_dtype, prepare_image, resize_and_crop, resize_and_padding  # type: ignore
         except ImportError as exc:
             raise RuntimeError(
                 "INFERENCE_BACKEND=catvton requires torch + CatVTON source code vendored under "
@@ -43,6 +44,7 @@ class CatVTONModel:
         model_path = self._resolve_model_path()
         self._torch = torch
         self._weight_dtype = init_weight_dtype(self.settings.mixed_precision)
+        self._prepare_image = prepare_image
         self._resize_and_crop = resize_and_crop
         self._resize_and_padding = resize_and_padding
         self._pipeline = CatVTONPix2PixPipeline(
@@ -56,29 +58,50 @@ class CatVTONModel:
         )
 
     def infer(self, person_img: Image.Image, outfit_img: Image.Image) -> Image.Image:
+        return self.infer_batch([person_img], [outfit_img])[0]
+
+    def infer_batch(self, person_imgs: list[Image.Image], outfit_imgs: list[Image.Image]) -> list[Image.Image]:
         if self._is_stub:
-            return self._stub_infer(person_img, outfit_img)
+            return [self._stub_infer(person_img, outfit_img) for person_img, outfit_img in zip(person_imgs, outfit_imgs)]
 
         if self._pipeline is None or self._torch is None:
             raise RuntimeError("Model not loaded. Call load() first.")
+        if len(person_imgs) != len(outfit_imgs):
+            raise ValueError("person_imgs and outfit_imgs must have the same length")
+        if not person_imgs:
+            return []
 
-        person_image = person_img.convert("RGB")
-        cloth_image = outfit_img.convert("RGB")
-        person_image = self._resize_and_crop(person_image, (self.settings.width, self.settings.height))
-        cloth_image = self._resize_and_padding(cloth_image, (self.settings.width, self.settings.height))
+        person_batch = self._torch.cat(
+            [
+                self._prepare_image(
+                    self._resize_and_crop(person_img.convert("RGB"), (self.settings.width, self.settings.height))
+                )
+                for person_img in person_imgs
+            ],
+            dim=0,
+        )
+        cloth_batch = self._torch.cat(
+            [
+                self._prepare_image(
+                    self._resize_and_padding(outfit_img.convert("RGB"), (self.settings.width, self.settings.height))
+                )
+                for outfit_img in outfit_imgs
+            ],
+            dim=0,
+        )
 
         generator = None
         if self.settings.seed >= 0:
             generator = self._torch.Generator(device=self.settings.device).manual_seed(self.settings.seed)
 
-        result = self._pipeline(
-            image=person_image,
-            condition_image=cloth_image,
+        results = self._pipeline(
+            image=person_batch,
+            condition_image=cloth_batch,
             num_inference_steps=self.settings.num_inference_steps,
             guidance_scale=self.settings.guidance_scale,
             generator=generator,
-        )[0]
-        return result.convert("RGBA")
+        )
+        return [result.convert("RGBA") for result in results]
 
     def _resolve_model_path(self) -> str:
         if os.path.isdir(self.settings.catvton_model_dir):
