@@ -1,13 +1,13 @@
 import jobService from "src/services/jobs";
 import { Request, Response } from "express";
 
-const createWeaverJob = async (req: Request & {user_id: string}, res: Response) => {
+const createWeaverJob = async (req: Request & {userId: string}, res: Response) => {
     try {
-        const { user_id, vton_id, user_snap_s3, uncleaned_outfit_s3 } = req.body;
-        if (user_id !== req.user_id) {
+        const { userId, vton_id, user_snap_s3, uncleaned_outfit_s3 } = req.body;
+        if (userId !== req.userId) {
             return res.status(403).json({ error: "Unauthorized" });
         }
-        const jobId = await jobService.queueWeaverJobs({ user_id, vton_id, user_snap_s3, uncleaned_outfit_s3 });
+        const jobId = await jobService.queueWeaverJobs({ userId, vton_id, user_snap_s3, uncleaned_outfit_s3 });
         res.status(200).json({ jobId });
 
     } catch (error) {
@@ -15,13 +15,13 @@ const createWeaverJob = async (req: Request & {user_id: string}, res: Response) 
     }
 }
 
-const createTailorJob = async (req: Request & {user_id: string}, res: Response) => {
+const createTailorJob = async (req: Request & {userId: string}, res: Response) => {
     try {
-        const { user_id, vton_id, uncleaned_outfit_s3 } = req.body;
-        if (user_id !== req.user_id) {
+        const { userId, vton_id, uncleaned_outfit_s3 } = req.body;
+        if (userId !== req.userId) {
             return res.status(403).json({ error: "Unauthorized" });
         }
-        const jobId = await jobService.queueTailorJobs({ user_id, vton_id, uncleaned_outfit_s3 });
+        const jobId = await jobService.queueTailorJobs({ userId, vton_id, uncleaned_outfit_s3 });
         res.status(200).json({ jobId });
 
     } catch (error) {
