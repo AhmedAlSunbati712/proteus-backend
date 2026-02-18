@@ -8,6 +8,10 @@ const router = Router();
 router.post("/signup", userController.createUser);
 router.post("/login", userController.loginUser);
 router.post("/logout", userController.logoutUser);
+
+router.get("/ws-token", authenticationMiddleware, async (req, res) => {
+    await userController.getWsToken(req as Request & { userId: string; token: string }, res);
+});
 router.get("/", authenticationMiddleware, async (req, res) => {
     await userController.getUser(req as Request & { userId: string }, res);
 });

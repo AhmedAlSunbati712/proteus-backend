@@ -16,7 +16,7 @@ export const getVTONs = async (user_id: string, query: Partial<VTON>): Promise<V
     }
 }
 
-const createVTON = async (user_id: string, vtonData: Omit<VTON, 'id' | 'user_id'>): Promise<VTON> => {
+const createVTON = async (user_id: string, vtonData: Omit<VTON, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>): Promise<VTON> => {
     try {
         const newVTON = await prisma.vTON.create({
             data: {

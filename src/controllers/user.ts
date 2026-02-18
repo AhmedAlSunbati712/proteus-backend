@@ -94,6 +94,20 @@ const updateUser = async (req: Request &{ userId: string }, res: Response): Prom
     }
 }
 
+const getWsToken = async (req: Request & { userId: string; token: string }, res: Response): Promise<void> => {
+    try {
+        const token = req.token;
+        if (!token) {
+            res.status(401).json({ error: "No token available" });
+            return;
+        }
+        res.json({ token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to get WebSocket token" });
+    }
+};
+
 const deleteUser = async (req: Request & { userId: string }, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -109,6 +123,7 @@ const userController = {
     createUser,
     getUser,
     getUsers,
+    getWsToken,
     loginUser,
     logoutUser,
     updateUser,

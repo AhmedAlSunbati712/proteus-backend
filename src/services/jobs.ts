@@ -2,7 +2,7 @@ import { redis } from "../config/redis";
 import { v4 as uuidv4 } from "uuid";
 
 const queueTailorJobs = async (job: {
-    user_id: string;
+    userId: string;
     vton_id: string;
     uncleaned_outfit_s3: string;
 }) => {
@@ -22,7 +22,7 @@ const queueTailorJobs = async (job: {
 }
 
 const queueWeaverJobs = async (job: {
-    user_id: string;
+    userId: string;
     vton_id: string;
     user_snap_s3: string;
     uncleaned_outfit_s3: string;
