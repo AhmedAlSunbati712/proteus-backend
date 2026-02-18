@@ -3,10 +3,8 @@ import { Request, Response } from "express";
 
 const createWeaverJob = async (req: Request & {userId: string}, res: Response) => {
     try {
-        const { userId, vton_id, user_snap_s3, uncleaned_outfit_s3 } = req.body;
-        if (userId !== req.userId) {
-            return res.status(403).json({ error: "Unauthorized" });
-        }
+        const { vton_id, user_snap_s3, uncleaned_outfit_s3 } = req.body;
+        const userId = req.userId;
         const jobId = await jobService.queueWeaverJobs({ userId, vton_id, user_snap_s3, uncleaned_outfit_s3 });
         res.status(200).json({ jobId });
 
@@ -17,10 +15,8 @@ const createWeaverJob = async (req: Request & {userId: string}, res: Response) =
 
 const createTailorJob = async (req: Request & {userId: string}, res: Response) => {
     try {
-        const { userId, vton_id, uncleaned_outfit_s3 } = req.body;
-        if (userId !== req.userId) {
-            return res.status(403).json({ error: "Unauthorized" });
-        }
+        const { vton_id, uncleaned_outfit_s3 } = req.body;
+        const userId = req.userId;
         const jobId = await jobService.queueTailorJobs({ userId, vton_id, uncleaned_outfit_s3 });
         res.status(200).json({ jobId });
 
