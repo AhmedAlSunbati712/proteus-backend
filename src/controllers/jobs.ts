@@ -1,4 +1,4 @@
-import jobService from "src/services/jobs";
+import jobService from "../services/jobs";
 import { Request, Response } from "express";
 
 const createWeaverJob = async (req: Request & {userId: string}, res: Response) => {

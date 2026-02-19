@@ -1,4 +1,4 @@
-import jobController from "src/controllers/jobs";
+import jobController from "../controllers/jobs";
 import authenticationMiddleware from "../middleware/auth";
 import { Router } from "express";
 import { Request, Response } from "express";

@@ -1,20 +1,17 @@
-# Gateway Dockerfile
-FROM node:20-alpine
-
+# Gateway Dockerfile (multi-stage: build then run)
+FROM node:20-alpine AS builder
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-# Copy package files
+FROM node:20-alpine
+WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
-
-# Copy source code
-COPY . .
-
-# Build TypeScript (if needed)
-RUN npm run build || true
-
-# Expose port
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 EXPOSE 3000
-
-# Start the gateway
 CMD ["node", "dist/index.js"]

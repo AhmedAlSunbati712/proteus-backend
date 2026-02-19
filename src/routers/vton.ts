@@ -1,4 +1,4 @@
-import vtonController from "src/controllers/vton";
+import vtonController from "../controllers/vton";
 import authenticationMiddleware from "../middleware/auth";
 import { Router } from "express";
 import { Request, Response } from "express";

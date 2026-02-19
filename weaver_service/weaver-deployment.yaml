@@ -22,7 +22,7 @@ spec:
         lke.linode.com/pool-id: "833545"
       containers:
         - name: weaver
-          image: YOUR_DOCKERHUB_USERNAME/weaver:latest
+          image: ahmedalsunbati27/weaver:latest
           imagePullPolicy: IfNotPresent
           resources:
             limits:

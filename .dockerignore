@@ -1,0 +1,7 @@
+# Don't copy local dist or node_modules into the image - we build inside Docker
+node_modules
+dist
+.git
+.env
+*.md
+proteus-prod-kubeconfig.yaml

@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
         - name: proteus-gateway
-          image: YOUR_DOCKERHUB_USERNAME/proteus-gateway:latest
-          imagePullPolicy: IfNotPresent
+          image: ahmedalsunbati27/proteus-gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           resources:
