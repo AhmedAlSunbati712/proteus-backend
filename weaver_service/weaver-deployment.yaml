@@ -1,7 +1,8 @@
-apiVersion:  apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: weaver
+  namespace: proteus
   labels:
     app: weaver
 spec:
@@ -9,16 +10,27 @@ spec:
   selector:
     matchLabels:
       app: weaver
-    
   template:
     metadata:
       labels:
         app: weaver
     spec:
+      # Pin to GPU nodes on LKE: uncomment and set to your GPU node pool label so Weaver runs only on GPU nodes.
+      # nodeSelector:
+      #   lke.linode.com/pool-id: "YOUR_GPU_POOL_ID"
+      nodeSelector: {}
       containers:
-      - name: weaver
-        image: weaver
-        imagePullPolicy: Never
-        envFrom:
-          - secretRef:
-              name: proteus-secrets
+        - name: weaver
+          image: weaver:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+              memory: 8Gi
+              cpu: "4"
+            requests:
+              memory: 4Gi
+              cpu: "2"
+          envFrom:
+            - secretRef:
+                name: proteus-secrets

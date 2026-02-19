@@ -1,16 +1,15 @@
-apiVersion:  apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: proteus-gateway
+  namespace: proteus
   labels:
     app: proteus-gateway
-
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: proteus-gateway
-    
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -22,11 +21,18 @@ spec:
         app: proteus-gateway
     spec:
       containers:
-      - name: proteus-gateway
-        image: proteus-gateway:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-          - containerPort: 3000
-        envFrom:
-         - secretRef:
-            name: proteus-secrets
+        - name: proteus-gateway
+          image: proteus-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: proteus-secrets

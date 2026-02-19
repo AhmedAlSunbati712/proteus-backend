@@ -1,0 +1,17 @@
+# TriggerAuthentication for KEDA Redis scaler. References the same secret used by Weaver.
+# Ensure proteus-secrets contains REDIS_PASSWORD (and optionally REDIS_USERNAME) for Redis auth.
+# If Redis has no password, omit authenticationRef from the Weaver ScaledObject.
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-redis-auth
+  namespace: proteus
+spec:
+  secretTargetRef:
+    - parameter: password
+      name: proteus-secrets
+      key: REDIS_PASSWORD
+    # Uncomment if using Redis ACL username:
+    # - parameter: username
+    #   name: proteus-secrets
+    #   key: REDIS_USERNAME

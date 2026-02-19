@@ -1,0 +1,24 @@
+# KEDA ScaledObject: scale Weaver deployment based on Redis list queue:weaver_jobs.
+# Prerequisites:
+# - KEDA installed in the cluster (e.g. helm install keda kedacore/keda -n keda --create-namespace).
+# - Weaver deployment has REDIS_HOST in its env (host:port, e.g. from proteus-secrets) so KEDA can connect.
+# - If Redis is password-protected, ensure TriggerAuthentication keda-redis-auth exists and
+#   proteus-secrets has REDIS_PASSWORD; then keep authenticationRef below. If no password, remove authenticationRef.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: weaver-scaler
+  namespace: proteus
+spec:
+  scaleTargetRef:
+    name: weaver
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+    - type: redis
+      metadata:
+        listName: queue:weaver_jobs
+        listLength: "10"
+        addressFromEnv: REDIS_HOST
+      authenticationRef:
+        name: keda-redis-auth
