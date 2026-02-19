@@ -18,10 +18,11 @@ spec:
       # Pin to GPU nodes on LKE: uncomment and set to your GPU node pool label so Weaver runs only on GPU nodes.
       # nodeSelector:
       #   lke.linode.com/pool-id: "YOUR_GPU_POOL_ID"
-      nodeSelector: {}
+      nodeSelector:
+        lke.linode.com/pool-id: "833545"
       containers:
         - name: weaver
-          image: weaver:latest
+          image: ahmedalsunbati27/weaver:latest
           imagePullPolicy: IfNotPresent
           resources:
             limits:
