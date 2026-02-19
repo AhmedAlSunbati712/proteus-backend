@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: arbitrator
-          image: ahmedalsunbati27/arbitrator:latest
+          image: YOUR_DOCKERHUB_USERNAME/arbitrator:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
