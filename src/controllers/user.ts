@@ -25,6 +25,7 @@ const createUser = async (req: Request, res: Response): Promise<void> => {
         res.status(500).json({ error: "Failed to create user" });
     }
 }
+
 const loginUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
@@ -43,6 +44,19 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
         res.status(200).cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 24 * 60 * 60 * 1000 }).json({ message: "Logged in successfully" });
     } catch (error) {
         res.status(500).json({ error: "Failed to login user" });
+    }
+}
+
+const logoutUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.cookies.token) {
+            res.clearCookie("token");
+            res.status(200).json({ message: "Logged out succesfully! "});
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
     }
 }
 
@@ -80,6 +94,20 @@ const updateUser = async (req: Request &{ userId: string }, res: Response): Prom
     }
 }
 
+const getWsToken = async (req: Request & { userId: string; token: string }, res: Response): Promise<void> => {
+    try {
+        const token = req.token;
+        if (!token) {
+            res.status(401).json({ error: "No token available" });
+            return;
+        }
+        res.json({ token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to get WebSocket token" });
+    }
+};
+
 const deleteUser = async (req: Request & { userId: string }, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -95,7 +123,9 @@ const userController = {
     createUser,
     getUser,
     getUsers,
+    getWsToken,
     loginUser,
+    logoutUser,
     updateUser,
     deleteUser,
 }

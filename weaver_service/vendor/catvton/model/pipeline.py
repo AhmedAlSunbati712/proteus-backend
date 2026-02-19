@@ -226,7 +226,7 @@ class CatVTONPix2PixPipeline(CatVTONPipeline):
             load_checkpoint_in_model(self.attn_modules, os.path.join(repo_path, version, 'attention'))
     
     def check_inputs(self, image, condition_image, width, height):
-        if isinstance(image, torch.Tensor) and isinstance(condition_image, torch.Tensor) and isinstance(torch.Tensor):
+        if isinstance(image, torch.Tensor) and isinstance(condition_image, torch.Tensor):
             return image, condition_image
         image = resize_and_crop(image, (width, height))
         condition_image = resize_and_padding(condition_image, (width, height))

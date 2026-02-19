@@ -11,9 +11,8 @@ const getPresignedUploadUrl = async (userId: string, fileType: string, fileName:
     }
 };
 
-const getPresignedDownloadUrl = async (userId: string, fileType: string, fileName: string): Promise<string> => {
+const getPresignedDownloadUrl = async (key: string): Promise<string> => {
     try {
-        const key = s3Utils.generateKey(userId, fileType, fileName);
         return await s3Utils.getPresignedDownloadUrl(key);
     } catch (error) {
         throw new Error("Failed to get presigned download URL");

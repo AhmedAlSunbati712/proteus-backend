@@ -1,9 +1,12 @@
-import { Router } from "express";
+import { Router, Response, Request } from "express";
 import imageController from "../controllers/images";
+import authenticationMiddleware from "src/middleware/auth";
 
 const router = Router();
 
-router.get("/presignedUploadUrl", imageController.getPresignedUploadUrl);
-router.get("/presignedDownloadUrl", imageController.getPresignedDownloadUrl);
+router.post("/presignedUploadUrl", authenticationMiddleware, async (req, res) => {
+    await imageController.getPresignedUploadUrl(req as Request & {userId: string}, res as Response);
+});
+router.post("/presignedDownloadUrl", authenticationMiddleware, imageController.getPresignedDownloadUrl);
 
 export default router;
