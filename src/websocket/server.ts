@@ -3,8 +3,20 @@ import jwt from "jsonwebtoken";
 import { WebSocket } from "ws";
 import { Server } from "ws";
 import { subscriber } from "../config/redis";
+import vtonService from "../services/vton";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
+
+interface JobDoneEvent {
+  job_id: string;
+  job_type: "tailor" | "try_on";
+  status: "done" | "failed";
+  user_id: string;
+  vton_id: string;
+  result_s3_key: string | null;
+  error: string | null;
+  finished_at: string;
+}
 
 function getTokenFromRequest(req: { url?: string; headers: Record<string, string | string[] | undefined> }): string | null {
   const auth = req.headers.authorization;
@@ -38,7 +50,36 @@ export async function initWebSocket(server: HttpServer): Promise<void> {
     process.exit(1);
   }
 
-  // TODO: Handle redis channel messages here.
+  subscriber.on("message", async (channel, message) => {
+    if (channel !== "events:job_done") return;
+
+    let payload: JobDoneEvent;
+    try {
+      payload = JSON.parse(message) as JobDoneEvent;
+    } catch (error) {
+      console.error("Failed to parse events:job_done payload:", error);
+      return;
+    }
+
+    const { user_id, vton_id, job_type, status, result_s3_key } = payload;
+
+    if (status === "done" && result_s3_key) {
+      try {
+        if (job_type === "try_on") {
+          await vtonService.updateVTON(user_id, vton_id, { outfit_try_on: result_s3_key });
+        }
+        if (job_type === "tailor") {
+          await vtonService.updateVTON(user_id, vton_id, { cleaned_outfit: result_s3_key });
+        }
+      } catch (error) {
+        console.error("Failed to update VTON from job_done event:", error);
+      }
+    }
+
+    const targetSocket = usersToSockets.get(user_id);
+    if (!targetSocket || targetSocket.readyState !== WebSocket.OPEN) return;
+    targetSocket.send(JSON.stringify(payload));
+  });
 
   wss.on("connection", (ws: WebSocket, req) => {
     const token = getTokenFromRequest(req);
@@ -62,5 +103,4 @@ export async function initWebSocket(server: HttpServer): Promise<void> {
     console.log(`User ${userId} connected`);
   });
 }
-
 
