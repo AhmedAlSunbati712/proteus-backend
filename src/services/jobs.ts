@@ -10,7 +10,9 @@ const queueTailorJobs = async (job: {
         const jobId = uuidv4();
         const jobData = {
             id: jobId,
-            ...job,
+            user_id: job.userId,
+            vton_id: job.vton_id,
+            uncleaned_outfit_s3: job.uncleaned_outfit_s3,
             created_at: new Date().toISOString(),
         };
         await redis.lpush("queue:tailor_jobs", JSON.stringify(jobData));
@@ -31,7 +33,10 @@ const queueWeaverJobs = async (job: {
         const jobId = uuidv4();
         const jobData = {
             id: jobId,
-            ...job,
+            user_id: job.userId,
+            vton_id: job.vton_id,
+            user_snap_s3: job.user_snap_s3,
+            uncleaned_outfit_s3: job.uncleaned_outfit_s3,
             created_at: new Date().toISOString(),
         };
         await redis.lpush("queue:weaver_jobs", JSON.stringify(jobData));
