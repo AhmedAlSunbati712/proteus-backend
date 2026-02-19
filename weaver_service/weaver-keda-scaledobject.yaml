@@ -12,7 +12,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: weaver
-  minReplicaCount: 1
+  minReplicaCount: 3
   maxReplicaCount: 5
   triggers:
     - type: redis

@@ -37,5 +37,4 @@ RUN mkdir -p /app/models
 # Set Python path to allow imports
 ENV PYTHONPATH=/app
 
-# Run the worker
-CMD ["python", "-m", "weaver_service.main"]
+CMD ["sh", "-c", "python -m weaver_service.download_model && exec python -m weaver_service.main"]

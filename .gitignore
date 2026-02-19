@@ -17,6 +17,7 @@ weaver_service/.env
 
 # Downloaded model artifacts (large binaries)
 weaver_service/models/
+weaver_service/weaver_service/models/
 
 # Local test assets/results
 weaver_service/test_inputs/
