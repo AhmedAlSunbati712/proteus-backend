@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: proteus-gateway
-          image: proteus-gateway:latest
+          image: YOUR_DOCKERHUB_USERNAME/proteus-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

@@ -1,6 +1,6 @@
 import { Router, Response, Request } from "express";
 import imageController from "../controllers/images";
-import authenticationMiddleware from "src/middleware/auth";
+import authenticationMiddleware from "../middleware/auth";
 
 const router = Router();
 

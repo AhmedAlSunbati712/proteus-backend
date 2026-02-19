@@ -1,6 +1,7 @@
 node_modules
 dist
 .env
+proteus-prod-kubeconfig.yaml
 
 # Python cache/build artifacts
 __pycache__/
