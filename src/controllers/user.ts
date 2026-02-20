@@ -50,7 +50,7 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
                 maxAge: 24 * 60 * 60 * 1000,
                 path: "/",
             })
-            .json({ message: "Logged in successfully" });
+            .json({ message: "Logged in successfully", token });
     } catch (error) {
         res.status(500).json({ error: "Failed to login user" });
     }
