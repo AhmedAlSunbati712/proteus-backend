@@ -41,7 +41,8 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
             return;
         }
         const token = generateToken(user.id);
-        res.status(200).cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 24 * 60 * 60 * 1000 }).json({ message: "Logged in successfully" });
+        res.status(200).json({ token });
+        res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 24 * 30 });
     } catch (error) {
         res.status(500).json({ error: "Failed to login user" });
     }
