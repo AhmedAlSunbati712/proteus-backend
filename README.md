@@ -6,6 +6,11 @@
 
 This document serves as the blueprint for development and the pitch deck for hackathon judges. It addresses: **Advanced Kubernetes (KEDA)**, **GPU Acceleration**, **Scalability**, and **Open Source Innovation**.
 
+**Demo video:** [https://youtu.be/D6bWGE5YtJ0](https://youtu.be/D6bWGE5YtJ0)
+
+[![Watch the Proteus demo video](https://img.youtube.com/vi/D6bWGE5YtJ0/maxresdefault.jpg)](https://youtu.be/D6bWGE5YtJ0)
+
+
 ---
 
 ## Table of Contents
