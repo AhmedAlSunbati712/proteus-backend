@@ -53,3 +53,45 @@ kubectl create secret generic proteus-secrets -n proteus \
 ```
 
 Then deploy Gateway, Weaver, HPA, and KEDA as in the main deployment runbook.
+
+## 4. Connecting to PostgreSQL from your machine
+
+PostgreSQL runs in-cluster with a headless `ClusterIP` service, so it is not exposed outside the cluster. To connect from your laptop or a CI host (e.g. for debugging, migrations, or backups), use **kubectl port-forward**.
+
+**Prerequisites:** `kubectl` configured for your LKE cluster (e.g. `KUBECONFIG` pointing at your cluster kubeconfig).
+
+**Option A – Port-forward the Service (recommended)**
+
+```bash
+kubectl port-forward -n proteus svc/postgres 5432:5432
+```
+
+Leave this running. In another terminal, connect with the same user/password/db you used in `postgres-credentials`:
+
+```bash
+# If you have psql installed
+psql "postgresql://proteus:YOUR_PG_PASSWORD@127.0.0.1:5432/proteus"
+```
+
+Or set `DATABASE_URL=postgresql://proteus:YOUR_PG_PASSWORD@127.0.0.1:5432/proteus` and run Prisma/your app locally against the cluster DB.
+
+**Option B – Port-forward the StatefulSet pod**
+
+If the service doesn’t work (e.g. headless service), target the pod directly:
+
+```bash
+kubectl port-forward -n proteus postgres-0 5432:5432
+```
+
+Then use `127.0.0.1:5432` as the host in your connection string.
+
+**Getting the password from the cluster**
+
+If you don’t have the Postgres password handy:
+
+```bash
+kubectl get secret postgres-credentials -n proteus -o jsonpath='{.data.postgres-password}' | base64 -d
+echo
+```
+
+Use that value for `YOUR_PG_PASSWORD` in the connection string above.
